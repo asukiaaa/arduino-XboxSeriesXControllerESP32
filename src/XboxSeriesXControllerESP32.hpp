@@ -3,7 +3,7 @@
 #include <NimBLEDevice.h>
 #include <XboxControllerNotificationParser.h>
 
-#define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
+// #define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
 
 namespace XboxSeriesXControllerESP32 {
 
@@ -268,9 +268,7 @@ class Core {
           pService->toString().c_str());
 #endif
       for (auto pChara : *pService->getCharacteristics(true)) {
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-        charaPrint(pChara);
-#endif
+        charaHandle(pChara);
         charaSubscribeNotification(pChara);
       }
     }
@@ -296,12 +294,13 @@ void printValue(std::__cxx11::string str) {
 }
 #endif
 
-void charaPrint(NimBLERemoteCharacteristic* pChara) {
+void charaHandle(NimBLERemoteCharacteristic* pChara) {
   if (pChara->canRead()) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     charaPrintId(pChara);
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(" canRead");
 #endif
+    // Reading value is required for subscribe
     auto str = pChara->readValue();
     if (str.size() == 0) {
       str = pChara->readValue();
