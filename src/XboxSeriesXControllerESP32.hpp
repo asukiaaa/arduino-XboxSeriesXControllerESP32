@@ -277,39 +277,39 @@ class Core {
   }
 
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-void charaPrintId(NimBLERemoteCharacteristic* pChara) {
-  XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(
-      "s:%s c:%s h:%d",
-      pChara->getRemoteService()->getUUID().toString().c_str(),
-      pChara->getUUID().toString().c_str(), pChara->getHandle());
-}
-
-void printValue(std::__cxx11::string str) {
-  XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf("str: %s\n", str.c_str());
-  XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf("hex:");
-  for (auto v : str) {
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(" %02x", v);
+  void charaPrintId(NimBLERemoteCharacteristic* pChara) {
+    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(
+        "s:%s c:%s h:%d",
+        pChara->getRemoteService()->getUUID().toString().c_str(),
+        pChara->getUUID().toString().c_str(), pChara->getHandle());
   }
-  XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
-}
-#endif
 
-void charaHandle(NimBLERemoteCharacteristic* pChara) {
-  if (pChara->canRead()) {
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-    charaPrintId(pChara);
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(" canRead");
-#endif
-    // Reading value is required for subscribe
-    auto str = pChara->readValue();
-    if (str.size() == 0) {
-      str = pChara->readValue();
+  void printValue(std::__cxx11::string str) {
+    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf("str: %s\n", str.c_str());
+    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf("hex:");
+    for (auto v : str) {
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(" %02x", v);
     }
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-    printValue(str);
-#endif
+    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
   }
-}
+#endif
+
+  void charaHandle(NimBLERemoteCharacteristic* pChara) {
+    if (pChara->canRead()) {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      charaPrintId(pChara);
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(" canRead");
+#endif
+      // Reading value is required for subscribe
+      auto str = pChara->readValue();
+      if (str.size() == 0) {
+        str = pChara->readValue();
+      }
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      printValue(str);
+#endif
+    }
+  }
 
   void charaSubscribeNotification(NimBLERemoteCharacteristic* pChara) {
     if (pChara->canNotify()) {
