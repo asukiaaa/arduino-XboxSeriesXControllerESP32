@@ -5,7 +5,7 @@
 
 // #define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
 
-namespace XboxSeriesXControllerESP32 {
+namespace XboxSeriesXControllerESP32_asukiaaa {
 
 static NimBLEUUID uuidServiceGeneral("1801");
 static NimBLEUUID uuidServiceBattery("180f");

@@ -1,4 +1,24 @@
-# XboxSeriesXControllerESP32
+# arduino-XboxSeriesXControllerESP32
+
+A library to use xbox controller on ESP32.
+
+## Setup
+
+### Arduino IDE
+
+Install XboxSerieslXControllerESP32_asukiaaa from library manager.
+
+### PlatformIO
+
+Specify XboxSeieslXControllerESP32_asukiaaa as lib_deps on platformio.ini
+
+```
+lib_deps = XboxSereslXControllerESP32_asukiaaa
+```
+
+## Usage
+
+See [examples](./examples).
 
 ## License
 
