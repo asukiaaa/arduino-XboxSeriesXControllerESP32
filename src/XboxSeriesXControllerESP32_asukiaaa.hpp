@@ -206,13 +206,18 @@ class Core {
     /** No client to reuse? Create a new one. */
     if (!pClient) {
       if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS) {
-        Serial.println("Max clients reached - no more connections available");
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
+            "Max clients reached - no more connections available");
+#endif
         return false;
       }
 
       pClient = NimBLEDevice::createClient();
 
-      Serial.println("New client created");
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("New client created");
+#endif
 
       pClient->setClientCallbacks(clientCBs, false);
       // pClient->setConnectionParams(12, 12, 0, 51);
