@@ -225,18 +225,20 @@ class Core {
       pClient->connect(advDevice, false);
     }
 
-    int retryCount = 5;
+    int retryCount = 3;
     while (!pClient->isConnected()) {
       if (retryCount <= 0) {
         return false;
       } else {
-        // Serial.println("try connection again " + String(millis()));
-        delay(1000);
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Try connection. left: " +
+                                                      String(retryCount));
+#endif
       }
 
       // NimBLEDevice::getScan()->stop();
       // pClient->disconnect();
-      delay(500);
+      delay(100);
       // Serial.println(pClient->toString().c_str());
       pClient->connect(true);
       --retryCount;
