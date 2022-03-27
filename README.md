@@ -1,4 +1,4 @@
-# arduino-XboxSeriesXControllerESP32
+# arduino-XboxSeriesXControllerESP32 (XboxSeriesXControllerESP32_asukiaaa)
 
 A library to use xbox controller on ESP32.
 
