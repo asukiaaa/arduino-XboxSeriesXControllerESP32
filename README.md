@@ -2,6 +2,11 @@
 
 A library to use xbox controller on ESP32.
 
+## Update firmware of controller
+
+This libary is checked with firmware version `5.13.3143.0` for xbox series X controller.
+You can check and udpate firmware with using [Xbox accessories](https://www.microsoft.com/en-us/p/xbox-accessories/9nblggh30xj3#activetab=pivot:overviewtab).
+
 ## Setup
 
 ### Arduino IDE
