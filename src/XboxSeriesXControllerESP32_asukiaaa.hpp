@@ -130,6 +130,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 };
 
 unsigned long printInterval = 100UL;
+bool scanning = false;
 
 class Core {
  public:
@@ -177,8 +178,9 @@ class Core {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Start scan");
 #endif
-    pScan->start(scanTime,
-                 std::bind(&Core::scanCompleteCB, this, std::placeholders::_1));
+    pScan->start(scanTime, &Core::scanCompleteCB);
+    // pScan->start(scanTime,
+    //              std::bind(&Core::scanCompleteCB, this, std::placeholders::_1));
   }
 
   XboxControllerNotificationParser xboxNotif;
@@ -186,7 +188,6 @@ class Core {
   bool isConnected() { return connected; }
 
  private:
-  bool scanning = false;
   bool connected = false;
   uint32_t scanTime = 0; /** 0 = scan forever */
 
@@ -371,7 +372,7 @@ class Core {
 #endif
   }
 
-  void scanCompleteCB(NimBLEScanResults results) {
+  static void scanCompleteCB(NimBLEScanResults results) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Scan Ended");
 #endif
