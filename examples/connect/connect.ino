@@ -8,10 +8,19 @@ void setup() {
   xboxController.begin();
 }
 
+static float calcMin0MaxPlus(int32_t joystickValue, int32_t joystickMax) {
+  auto halfMax = joystickMax / 2;
+  return (double)(joystickValue - halfMax) / halfMax;
+}
+
 void loop() {
   xboxController.onLoop();
   if (xboxController.isConnected()) {
-    Serial.print(xboxController.xboxNotif.joyLHori);
+    Serial.println(xboxController.xboxNotif.joyLHori);
+    Serial.println(xboxController.xboxNotif.joyLVert);
+    uint16_t joystickMax = XboxControllerNotificationParser::maxJoy;
+    Serial.println(calcMin0MaxPlus(xboxController.xboxNotif.joyLHori, joystickMax));
+    Serial.println(-calcMin0MaxPlus(xboxController.xboxNotif.joyLVert, joystickMax));
   } else {
     Serial.print("not connected");
   }
