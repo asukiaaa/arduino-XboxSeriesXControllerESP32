@@ -4,6 +4,9 @@
 #include <XboxControllerNotificationParser.h>
 
 // #define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+const unsigned long printInterval = 100UL;
+#endif
 
 namespace XboxSeriesXControllerESP32_asukiaaa {
 
@@ -129,7 +132,6 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
   };
 };
 
-unsigned long printInterval = 100UL;
 bool scanning = false;
 
 class Core {
