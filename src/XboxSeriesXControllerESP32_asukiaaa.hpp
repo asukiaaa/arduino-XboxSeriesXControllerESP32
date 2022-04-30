@@ -93,15 +93,17 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 };
 
 /** Define a class to handle the callbacks when advertisments are received */
-class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
+class ScanCallbacks : public NimBLEScanCallbacks {
  public:
-  AdvertisedDeviceCallbacks(String strTargetDeviceAddress) {
+  ScanCallbacks(String strTargetDeviceAddress, bool* pScanning) {
     this->targetDeviceAddress =
         new NimBLEAddress(strTargetDeviceAddress.c_str());
+    this->pScanning = pScanning;
   }
 
- private:
   NimBLEAddress* targetDeviceAddress;
+  bool* pScanning;
+
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("Advertised Device found: ");
@@ -130,18 +132,23 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
       advDevice = advertisedDevice;
     }
   };
-};
 
-bool scanning = false;
+  void onScanEnd(NimBLEScanResults results) {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Scan Ended");
+#endif
+    *pScanning = false;
+  }
+};
 
 class Core {
  public:
   Core(String targetDeviceAddress = "") {
-    this->advDeviceCBs = new AdvertisedDeviceCallbacks(targetDeviceAddress);
+    this->scanCBs = new ScanCallbacks(targetDeviceAddress, &scanning);
     this->clientCBs = new ClientCallbacks(&connected);
   }
 
-  AdvertisedDeviceCallbacks* advDeviceCBs;
+  ScanCallbacks* scanCBs;
   ClientCallbacks* clientCBs;
 
   void begin() {
@@ -174,15 +181,13 @@ class Core {
   void startScan() {
     scanning = true;
     auto pScan = NimBLEDevice::getScan();
-    pScan->setAdvertisedDeviceCallbacks(advDeviceCBs);
+    pScan->setScanCallbacks(scanCBs);
     pScan->setInterval(45);
     pScan->setWindow(15);
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Start scan");
 #endif
-    pScan->start(scanTime, &Core::scanCompleteCB);
-    // pScan->start(scanTime,
-    //              std::bind(&Core::scanCompleteCB, this, std::placeholders::_1));
+    pScan->startAsync(scanTime);
   }
 
   XboxControllerNotificationParser xboxNotif;
@@ -191,6 +196,7 @@ class Core {
 
  private:
   bool connected = false;
+  bool scanning = false;
   uint32_t scanTime = 0; /** 0 = scan forever */
 
   /** Handles the provisioning of clients and connects / interfaces with the
@@ -372,13 +378,6 @@ class Core {
     printedAt = millis();
     isPrinting = false;
 #endif
-  }
-
-  static void scanCompleteCB(NimBLEScanResults results) {
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Scan Ended");
-#endif
-    scanning = false;
   }
 };
 
