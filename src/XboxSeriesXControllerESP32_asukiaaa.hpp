@@ -163,6 +163,7 @@ class Core {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
           XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Failed to connect");
 #endif
+          NimBLEDevice::deleteBond(advDevice->getAddress());
         }
         advDevice = nullptr;
       } else if (!scanning) {
