@@ -13,11 +13,13 @@ void loop() {
   xboxController.onLoop();
   if (xboxController.isConnected()) {
     Serial.print(xboxController.xboxNotif.toString());
+    unsigned long receivedAt = xboxController.getReceiveNotificationAt();
     uint16_t joystickMax = XboxControllerNotificationParser::maxJoy;
     Serial.print("joyLHori rate: ");
     Serial.println((float) xboxController.xboxNotif.joyLHori / joystickMax);
     Serial.print("joyLVert rate: ");
     Serial.println((float) xboxController.xboxNotif.joyLVert / joystickMax);
+    Serial.println("received at " + String(receivedAt));
   } else {
     Serial.print("not connected");
   }

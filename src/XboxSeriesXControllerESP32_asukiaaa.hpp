@@ -189,9 +189,11 @@ class Core {
   XboxControllerNotificationParser xboxNotif;
 
   bool isConnected() { return connected; }
+  unsigned long getReceiveNotificationAt() { return receivedNotificationAt; }
 
  private:
   bool connected = false;
+  unsigned long receivedNotificationAt = 0;
   uint32_t scanTime = 0; /** 0 = scan forever */
 
   /** Handles the provisioning of clients and connects / interfaces with the
@@ -368,6 +370,7 @@ class Core {
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
 #endif
     xboxNotif.update(pData, length);
+    receivedNotificationAt = millis();
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     // XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print(xboxNotif.toString());
     printedAt = millis();
