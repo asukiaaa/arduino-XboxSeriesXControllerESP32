@@ -146,7 +146,7 @@ class Core {
 
   void begin() {
     NimBLEDevice::init("");
-    NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM);
+    NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
     NimBLEDevice::setSecurityAuth(true, true, true);
     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
   }
