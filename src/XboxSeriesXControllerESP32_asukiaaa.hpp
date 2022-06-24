@@ -145,10 +145,12 @@ class Core {
   ClientCallbacks* clientCBs;
 
   void begin() {
+    NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DEVICE);
+    NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
     NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
     NimBLEDevice::setSecurityAuth(true, true, true);
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
+    // NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
   }
 
   void onLoop() {
@@ -176,14 +178,16 @@ class Core {
     scanning = true;
     auto pScan = NimBLEDevice::getScan();
     pScan->setAdvertisedDeviceCallbacks(advDeviceCBs);
-    pScan->setInterval(45);
-    pScan->setWindow(15);
+    pScan->setActiveScan(true);
+    pScan->setInterval(97);
+    pScan->setWindow(37);
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Start scan");
 #endif
     pScan->start(scanTime, &Core::scanCompleteCB);
     // pScan->start(scanTime,
-    //              std::bind(&Core::scanCompleteCB, this, std::placeholders::_1));
+    //              std::bind(&Core::scanCompleteCB, this,
+    //              std::placeholders::_1));
   }
 
   XboxControllerNotificationParser xboxNotif;
