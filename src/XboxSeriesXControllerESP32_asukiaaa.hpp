@@ -96,12 +96,14 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
  public:
   AdvertisedDeviceCallbacks(String strTargetDeviceAddress) {
-    this->targetDeviceAddress =
-        new NimBLEAddress(strTargetDeviceAddress.c_str());
+    if (strTargetDeviceAddress != "") {
+      this->targetDeviceAddress =
+          new NimBLEAddress(strTargetDeviceAddress.c_str());
+    }
   }
 
  private:
-  NimBLEAddress* targetDeviceAddress;
+  NimBLEAddress* targetDeviceAddress = nullptr;
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("Advertised Device found: ");
@@ -118,7 +120,9 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 #endif
     // NimBLEAddress deviceAddress(targetDeviceAddress);
     // if (advertisedDevice->getAddress().equals(deviceAddress))
-    if (advertisedDevice->getAddress().equals(*targetDeviceAddress))
+    if ((targetDeviceAddress != nullptr &&
+         advertisedDevice->getAddress().equals(*targetDeviceAddress)) ||
+        advertisedDevice->getName() == "Xbox Wireless Controller")
     // if (advertisedDevice->isAdvertisingService(uuidServiceHid))
     {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
