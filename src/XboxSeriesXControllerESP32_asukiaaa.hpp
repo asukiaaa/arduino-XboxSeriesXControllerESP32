@@ -160,21 +160,14 @@ class Core {
   void onLoop() {
     if (!connected) {
       if (advDevice != nullptr) {
-        if (connectToServer(advDevice)) {
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-          XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
-              "Success! we should now be getting notifications");
-#endif
-        } else {
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-          XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Failed to connect");
-#endif
+        auto connectionResult = connectToServer(advDevice);
+        delay(1000);
+        if (!connectionResult || !connected) {
           NimBLEDevice::deleteBond(advDevice->getAddress());
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-          XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("call deinit");
-#endif
           NimBLEDevice::deinit(true);
+          delay(500);
           begin();
+          delay(500);
         }
         advDevice = nullptr;
       } else if (!scanning) {
