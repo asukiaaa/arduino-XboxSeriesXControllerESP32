@@ -164,13 +164,11 @@ class Core {
         delay(1000);
         if (!connectionResult || !connected) {
           NimBLEDevice::deleteBond(advDevice->getAddress());
-          NimBLEDevice::deinit(true);
-          delay(500);
-          begin();
-          delay(500);
+          reset();
         }
         advDevice = nullptr;
       } else if (!scanning) {
+        reset();
         startScan();
       }
     }
@@ -200,7 +198,14 @@ class Core {
  private:
   bool connected = false;
   unsigned long receivedNotificationAt = 0;
-  uint32_t scanTime = 0; /** 0 = scan forever */
+  uint32_t scanTime = 10; /** 0 = scan forever */
+
+  void reset () {
+    NimBLEDevice::deinit(true);
+    delay(500);
+    begin();
+    delay(500);
+  }
 
   /** Handles the provisioning of clients and connects / interfaces with the
    * server */
