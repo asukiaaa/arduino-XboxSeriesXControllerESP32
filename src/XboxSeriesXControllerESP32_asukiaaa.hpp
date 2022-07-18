@@ -21,16 +21,25 @@ static NimBLEUUID uuidCharaPeripheralControlParameters("2a04");
 
 static NimBLEAdvertisedDevice* advDevice;
 
+enum class ConnectionState : uint8_t {
+  Connected = 0,
+  WaitingFirstNotification = 1,
+  Found = 2,
+  Scanning = 3,
+};
+
 class ClientCallbacks : public NimBLEClientCallbacks {
  public:
-  ClientCallbacks(bool* pConnected) { this->pConnected = pConnected; }
-  bool* pConnected;
+  ConnectionState* pConnectionState;
+  ClientCallbacks(ConnectionState* pConnectionState) {
+    this->pConnectionState = pConnectionState;
+  }
 
   void onConnect(NimBLEClient* pClient) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Connected");
 #endif
-    *pConnected = true;
+    *pConnectionState = ConnectionState::WaitingFirstNotification;
     // pClient->updateConnParams(120,120,0,60);
   };
 
@@ -40,7 +49,7 @@ class ClientCallbacks : public NimBLEClientCallbacks {
         pClient->getPeerAddress().toString().c_str());
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(" Disconnected");
 #endif
-    *pConnected = false;
+    *pConnectionState = ConnectionState::Scanning;
   };
 
   /** Called when the peripheral requests a change to the connection parameters.
@@ -95,15 +104,18 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 /** Define a class to handle the callbacks when advertisments are received */
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
  public:
-  AdvertisedDeviceCallbacks(String strTargetDeviceAddress) {
+  AdvertisedDeviceCallbacks(String strTargetDeviceAddress,
+                            ConnectionState* pConnectionState) {
     if (strTargetDeviceAddress != "") {
       this->targetDeviceAddress =
           new NimBLEAddress(strTargetDeviceAddress.c_str());
     }
+    this->pConnectionState = pConnectionState;
   }
 
  private:
   NimBLEAddress* targetDeviceAddress = nullptr;
+  ConnectionState* pConnectionState;
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("Advertised Device found: ");
@@ -131,6 +143,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
       /** stop scan before connecting */
       NimBLEDevice::getScan()->stop();
       /** Save the device reference in a global for the client to use*/
+      *pConnectionState = ConnectionState::Found;
       advDevice = advertisedDevice;
     }
   };
@@ -139,8 +152,9 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 class Core {
  public:
   Core(String targetDeviceAddress = "") {
-    this->advDeviceCBs = new AdvertisedDeviceCallbacks(targetDeviceAddress);
-    this->clientCBs = new ClientCallbacks(&connected);
+    this->advDeviceCBs =
+        new AdvertisedDeviceCallbacks(targetDeviceAddress, &connectionState);
+    this->clientCBs = new ClientCallbacks(&connectionState);
   }
 
   AdvertisedDeviceCallbacks* advDeviceCBs;
@@ -156,13 +170,13 @@ class Core {
   }
 
   void onLoop() {
-    if (!connected) {
+    if (!isConnected()) {
       if (advDevice != nullptr) {
         auto connectionResult = connectToServer(advDevice);
-        delay(1000);
-        if (!connectionResult || !connected) {
+        if (!connectionResult || !isConnected()) {
           NimBLEDevice::deleteBond(advDevice->getAddress());
           reset();
+          connectionState = ConnectionState::Scanning;
         }
         advDevice = nullptr;
       } else if (!isScanning()) {
@@ -173,7 +187,11 @@ class Core {
   }
 
   void startScan() {
+    connectionState = ConnectionState::Scanning;
     auto pScan = NimBLEDevice::getScan();
+    // pScan->clearResults();
+    // pScan->clearDuplicateCache();
+    // pScan->setDuplicateFilter(false);
     pScan->setAdvertisedDeviceCallbacks(advDeviceCBs);
     pScan->setActiveScan(true);
     pScan->setInterval(97);
@@ -187,17 +205,20 @@ class Core {
 
   XboxControllerNotificationParser xboxNotif;
 
-  bool isConnected() { return connected; }
+  bool isConnected() {
+    return connectionState == ConnectionState::WaitingFirstNotification ||
+           connectionState == ConnectionState::Connected;
+  }
   unsigned long getReceiveNotificationAt() { return receivedNotificationAt; }
 
  private:
-  bool connected = false;
+  ConnectionState connectionState = ConnectionState::Scanning;
   unsigned long receivedNotificationAt = 0;
   uint32_t scanTime = 10; /** 0 = scan forever */
 
   bool isScanning() { return NimBLEDevice::getScan()->isScanning(); }
 
-  void reset () {
+  void reset() {
     NimBLEDevice::deinit(true);
     delay(500);
     begin();
@@ -377,6 +398,7 @@ class Core {
     }
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
 #endif
+    connectionState = ConnectionState::Connected;
     xboxNotif.update(pData, length);
     receivedNotificationAt = millis();
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
