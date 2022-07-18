@@ -153,7 +153,7 @@ class Core {
     NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
     NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
-    NimBLEDevice::setSecurityAuth(true, true, true);
+    NimBLEDevice::setSecurityAuth(true, false, false);
     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /* +9db */
   }
 
