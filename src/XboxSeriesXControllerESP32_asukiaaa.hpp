@@ -136,8 +136,6 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
   };
 };
 
-bool scanning = false;
-
 class Core {
  public:
   Core(String targetDeviceAddress = "") {
@@ -167,7 +165,7 @@ class Core {
           reset();
         }
         advDevice = nullptr;
-      } else if (!scanning) {
+      } else if (!isScanning()) {
         reset();
         startScan();
       }
@@ -175,7 +173,6 @@ class Core {
   }
 
   void startScan() {
-    scanning = true;
     auto pScan = NimBLEDevice::getScan();
     pScan->setAdvertisedDeviceCallbacks(advDeviceCBs);
     pScan->setActiveScan(true);
@@ -184,10 +181,8 @@ class Core {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Start scan");
 #endif
-    pScan->start(scanTime, &Core::scanCompleteCB);
-    // pScan->start(scanTime,
-    //              std::bind(&Core::scanCompleteCB, this,
-    //              std::placeholders::_1));
+    // assign scanCompleteCB to scan on other thread
+    pScan->start(scanTime, &Core::scanCompleteCB, false);
   }
 
   XboxControllerNotificationParser xboxNotif;
@@ -199,6 +194,8 @@ class Core {
   bool connected = false;
   unsigned long receivedNotificationAt = 0;
   uint32_t scanTime = 10; /** 0 = scan forever */
+
+  bool isScanning() { return NimBLEDevice::getScan()->isScanning(); }
 
   void reset () {
     NimBLEDevice::deinit(true);
@@ -393,7 +390,6 @@ class Core {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Scan Ended");
 #endif
-    scanning = false;
   }
 };
 
