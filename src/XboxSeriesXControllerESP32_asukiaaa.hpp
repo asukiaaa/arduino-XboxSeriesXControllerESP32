@@ -150,7 +150,7 @@ class Core {
 
   void begin() {
     NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DEVICE);
-    NimBLEDevice::setScanDuplicateCacheSize(200);
+    // NimBLEDevice::setScanDuplicateCacheSize(200);
     NimBLEDevice::init("");
     NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
     NimBLEDevice::setSecurityAuth(true, false, false);
