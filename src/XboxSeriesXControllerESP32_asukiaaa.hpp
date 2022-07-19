@@ -134,7 +134,8 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     // if (advertisedDevice->getAddress().equals(deviceAddress))
     if ((targetDeviceAddress != nullptr &&
          advertisedDevice->getAddress().equals(*targetDeviceAddress)) ||
-        advertisedDevice->getName() == "Xbox Wireless Controller")
+        (targetDeviceAddress == nullptr &&
+         advertisedDevice->getName() == "Xbox Wireless Controller"))
     // if (advertisedDevice->isAdvertisingService(uuidServiceHid))
     {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
