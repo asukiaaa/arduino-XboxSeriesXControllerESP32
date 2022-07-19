@@ -215,7 +215,7 @@ class Core {
  private:
   ConnectionState connectionState = ConnectionState::Scanning;
   unsigned long receivedNotificationAt = 0;
-  uint32_t scanTime = 10; /** 0 = scan forever */
+  uint32_t scanTime = 4; /** 0 = scan forever */
 
   bool isScanning() { return NimBLEDevice::getScan()->isScanning(); }
 
