@@ -142,7 +142,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
       XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Found target");
 #endif
       /** stop scan before connecting */
-      NimBLEDevice::getScan()->stop();
+      // NimBLEDevice::getScan()->stop();
       /** Save the device reference in a global for the client to use*/
       *pConnectionState = ConnectionState::Found;
       advDevice = advertisedDevice;
