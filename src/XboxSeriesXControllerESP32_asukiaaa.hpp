@@ -176,12 +176,12 @@ class Core {
         auto connectionResult = connectToServer(advDevice);
         if (!connectionResult || !isConnected()) {
           NimBLEDevice::deleteBond(advDevice->getAddress());
-          reset();
+          // reset();
           connectionState = ConnectionState::Scanning;
         }
         advDevice = nullptr;
       } else if (!isScanning()) {
-        reset();
+        // reset();
         startScan();
       }
     }
@@ -219,12 +219,12 @@ class Core {
 
   bool isScanning() { return NimBLEDevice::getScan()->isScanning(); }
 
-  void reset() {
-    NimBLEDevice::deinit(true);
-    delay(500);
-    begin();
-    delay(500);
-  }
+  // void reset() {
+  //   NimBLEDevice::deinit(true);
+  //   delay(500);
+  //   begin();
+  //   delay(500);
+  // }
 
   /** Handles the provisioning of clients and connects / interfaces with the
    * server */
