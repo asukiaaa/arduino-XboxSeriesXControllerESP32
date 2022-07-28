@@ -21,6 +21,10 @@ static NimBLEUUID uuidCharaPeripheralControlParameters("2a04");
 
 static NimBLEAdvertisedDevice* advDevice;
 
+uint16_t controllerAppearance = 964;
+String controllerManufacturerDataNormal = "060000";
+String controllerManufacturerDataSearching = "0600030080";
+
 enum class ConnectionState : uint8_t {
   Connected = 0,
   WaitingFirstNotification = 1,
@@ -130,12 +134,16 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
             ? advertisedDevice->getServiceUUID().toString().c_str()
             : "none");
 #endif
-    // NimBLEAddress deviceAddress(targetDeviceAddress);
-    // if (advertisedDevice->getAddress().equals(deviceAddress))
+    char* pHex = NimBLEUtils::buildHexData(
+        nullptr, (uint8_t*)advertisedDevice->getManufacturerData().data(),
+        advertisedDevice->getManufacturerData().length());
     if ((targetDeviceAddress != nullptr &&
          advertisedDevice->getAddress().equals(*targetDeviceAddress)) ||
         (targetDeviceAddress == nullptr &&
-         advertisedDevice->getName() == "Xbox Wireless Controller"))
+         advertisedDevice->getAppearance() == controllerAppearance &&
+         (strcmp(pHex, controllerManufacturerDataNormal.c_str()) == 0 ||
+          strcmp(pHex, controllerManufacturerDataSearching.c_str()) == 0) &&
+         advertisedDevice->getServiceUUID().equals(uuidServiceHid)))
     // if (advertisedDevice->isAdvertisingService(uuidServiceHid))
     {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
@@ -192,9 +200,9 @@ class Core {
     auto pScan = NimBLEDevice::getScan();
     // pScan->clearResults();
     // pScan->clearDuplicateCache();
-    // pScan->setDuplicateFilter(false);
+    pScan->setDuplicateFilter(false);
     pScan->setAdvertisedDeviceCallbacks(advDeviceCBs);
-    pScan->setActiveScan(true);
+    // pScan->setActiveScan(true);
     pScan->setInterval(97);
     pScan->setWindow(37);
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
