@@ -3,6 +3,8 @@
 #include <NimBLEDevice.h>
 #include <XboxControllerNotificationParser.h>
 
+#define XBOX_SERIES_X_CONTROLLER_RESET_WHEN_FAILING_CONNECTION
+
 // #define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
 const unsigned long printInterval = 100UL;
@@ -121,6 +123,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
   NimBLEAddress* targetDeviceAddress = nullptr;
   ConnectionState* pConnectionState;
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
+    Serial.println(advertisedDevice->toString().c_str());
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("Advertised Device found: ");
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
@@ -184,8 +187,16 @@ class Core {
         auto connectionResult = connectToServer(advDevice);
         if (!connectionResult || !isConnected()) {
           NimBLEDevice::deleteBond(advDevice->getAddress());
+          ++countFailedConnection;
+#ifdef XBOX_SERIES_X_CONTROLLER_RESET_WHEN_FAILING_CONNECTION
+          if (countFailedConnection > 2) {
+            ESP.restart();
+          }
+#endif
           // reset();
           connectionState = ConnectionState::Scanning;
+        } else {
+          countFailedConnection = 0;
         }
         advDevice = nullptr;
       } else if (!isScanning()) {
@@ -224,6 +235,7 @@ class Core {
   ConnectionState connectionState = ConnectionState::Scanning;
   unsigned long receivedNotificationAt = 0;
   uint32_t scanTime = 4; /** 0 = scan forever */
+  uint8_t countFailedConnection = 0;
 
   bool isScanning() { return NimBLEDevice::getScan()->isScanning(); }
 
