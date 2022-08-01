@@ -263,10 +263,18 @@ class Core {
       XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("New client created");
 #endif
 
-      pClient->setClientCallbacks(clientCBs, false);
-      // pClient->setConnectionParams(12, 12, 0, 51);
-      pClient->setConnectTimeout(5);
-      pClient->connect(advDevice, false);
+      // default values
+      // pClient->setConnectionParams(
+      //     BLE_GAP_INITIAL_CONN_ITVL_MIN, BLE_GAP_INITIAL_CONN_ITVL_MAX,
+      //     BLE_GAP_INITIAL_CONN_LATENCY, BLE_GAP_INITIAL_SUPERVISION_TIMEOUT,
+      //     16, 16);
+      // pClient->setConnectionParams(
+      //     BLE_GAP_INITIAL_CONN_ITVL_MIN, BLE_GAP_INITIAL_CONN_ITVL_MAX,
+      //     BLE_GAP_INITIAL_CONN_LATENCY, BLE_GAP_INITIAL_SUPERVISION_TIMEOUT,
+      //     100, 100);
+      pClient->setClientCallbacks(clientCBs, true);
+      pClient->setConnectTimeout(50);
+      pClient->connect(advDevice, true);
     }
 
     int retryCount = 3;
