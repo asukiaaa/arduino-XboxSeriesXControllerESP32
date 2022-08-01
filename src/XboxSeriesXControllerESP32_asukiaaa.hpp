@@ -58,28 +58,6 @@ class ClientCallbacks : public NimBLEClientCallbacks {
     *pConnectionState = ConnectionState::Scanning;
   };
 
-  /** Called when the peripheral requests a change to the connection parameters.
-   *  Return true to accept and apply them or false to reject and keep
-   *  the currently used parameters. Default will return true.
-   */
-  bool onConnParamsUpdateRequest(NimBLEClient* pClient,
-                                 const ble_gap_upd_params* params) {
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("onConnParamsUpdateRequest");
-#endif
-    if (params->itvl_min < 24) { /** 1.25ms units */
-      return false;
-    } else if (params->itvl_max > 40) { /** 1.25ms units */
-      return false;
-    } else if (params->latency > 2) { /** Number of intervals allowed to skip */
-      return false;
-    } else if (params->supervision_timeout > 100) { /** 10ms units */
-      return false;
-    }
-
-    return true;
-  };
-
   /********************* Security handled here **********************
   ****** Note: these are the same return values as defaults ********/
   uint32_t onPassKeyRequest() {
@@ -215,7 +193,7 @@ class Core {
     pScan->setAdvertisedDeviceCallbacks(advDeviceCBs);
     // pScan->setActiveScan(true);
     pScan->setInterval(97);
-    pScan->setWindow(37);
+    pScan->setWindow(97);
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Start scan");
 #endif
@@ -285,7 +263,6 @@ class Core {
       //     BLE_GAP_INITIAL_CONN_LATENCY, BLE_GAP_INITIAL_SUPERVISION_TIMEOUT,
       //     100, 100);
       pClient->setClientCallbacks(clientCBs, true);
-      pClient->setConnectTimeout(50);
       pClient->connect(advDevice, true);
     }
 
