@@ -1,8 +1,11 @@
 #include <XboxSeriesXControllerESP32_asukiaaa.hpp>
 
 // Required to replace with your xbox address
-// XboxSeriesXControllerESP32_asukiaaa::Core xboxController("44:16:22:5e:b2:d4");
-XboxSeriesXControllerESP32_asukiaaa::Core xboxController; // any xbox controller
+// XboxSeriesXControllerESP32_asukiaaa::Core
+// xboxController("44:16:22:5e:b2:d4");
+
+// any xbox controller
+XboxSeriesXControllerESP32_asukiaaa::Core xboxController;
 
 void setup() {
   Serial.begin(115200);
@@ -17,9 +20,9 @@ void loop() {
     unsigned long receivedAt = xboxController.getReceiveNotificationAt();
     uint16_t joystickMax = XboxControllerNotificationParser::maxJoy;
     Serial.print("joyLHori rate: ");
-    Serial.println((float) xboxController.xboxNotif.joyLHori / joystickMax);
+    Serial.println((float)xboxController.xboxNotif.joyLHori / joystickMax);
     Serial.print("joyLVert rate: ");
-    Serial.println((float) xboxController.xboxNotif.joyLVert / joystickMax);
+    Serial.println((float)xboxController.xboxNotif.joyLVert / joystickMax);
     Serial.println("received at " + String(receivedAt));
   } else {
     Serial.print("not connected");
