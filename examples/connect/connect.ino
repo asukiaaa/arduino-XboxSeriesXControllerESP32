@@ -23,6 +23,9 @@ void loop() {
     Serial.println("received at " + String(receivedAt));
   } else {
     Serial.print("not connected");
+    if (xboxController.getCountFailedConnection() > 2) {
+      ESP.restart();
+    }
   }
   Serial.println(" at " + String(millis()));
   delay(500);

@@ -3,8 +3,6 @@
 #include <NimBLEDevice.h>
 #include <XboxControllerNotificationParser.h>
 
-// #define XBOX_SERIES_X_CONTROLLER_RESET_WHEN_FAILING_CONNECTION
-
 // #define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
 const unsigned long printInterval = 100UL;
@@ -166,11 +164,6 @@ class Core {
         if (!connectionResult || !isConnected()) {
           NimBLEDevice::deleteBond(advDevice->getAddress());
           ++countFailedConnection;
-#ifdef XBOX_SERIES_X_CONTROLLER_RESET_WHEN_FAILING_CONNECTION
-          if (countFailedConnection > 2) {
-            ESP.restart();
-          }
-#endif
           // reset();
           connectionState = ConnectionState::Scanning;
         } else {
@@ -208,6 +201,7 @@ class Core {
            connectionState == ConnectionState::Connected;
   }
   unsigned long getReceiveNotificationAt() { return receivedNotificationAt; }
+  uint8_t getCountFailedConnection() { return countFailedConnection; }
 
  private:
   ConnectionState connectionState = ConnectionState::Scanning;
