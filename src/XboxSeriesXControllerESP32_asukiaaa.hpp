@@ -195,6 +195,8 @@ class Core {
   }
 
   XboxControllerNotificationParser xboxNotif;
+  const size_t notifByteLen = XboxControllerNotificationParser::expectedDataLen;
+  uint8_t notifByteArr[XboxControllerNotificationParser::expectedDataLen];
 
   bool isConnected() {
     return connectionState == ConnectionState::WaitingFirstNotification ||
@@ -400,6 +402,7 @@ class Core {
 #endif
     connectionState = ConnectionState::Connected;
     xboxNotif.update(pData, length);
+    memcpy(notifByteArr, pData, length < notifByteLen ? length : notifByteLen);
     receivedNotificationAt = millis();
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     // XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print(xboxNotif.toString());
