@@ -148,6 +148,8 @@ class Core {
   AdvertisedDeviceCallbacks* advDeviceCBs;
   ClientCallbacks* clientCBs;
   uint8_t battery = 0;
+  static const int deviceAddressLen = 6;
+  uint8_t deviceAddressArr[deviceAddressLen];
 
   void begin() {
     NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DEVICE);
@@ -176,6 +178,14 @@ class Core {
         startScan();
       }
     }
+  }
+
+  String buildDeviceAddressStr() {
+    char buffer[18];
+    auto addr = deviceAddressArr;
+    snprintf(buffer, sizeof(buffer), "%02x:%02x:%02x:%02x:%02x:%02x", addr[5],
+             addr[4], addr[3], addr[2], addr[1], addr[0]);
+    return String(buffer);
   }
 
   void startScan() {
@@ -303,6 +313,8 @@ class Core {
   }
 
   bool afterConnect(NimBLEClient* pClient) {
+    memcpy(deviceAddressArr, pClient->getPeerAddress().getNative(),
+           deviceAddressLen);
     for (auto pService : *pClient->getServices(true)) {
       auto sUuid = pService->getUUID();
       if (!sUuid.equals(uuidServiceHid) && !sUuid.equals(uuidServiceBattery)) {
