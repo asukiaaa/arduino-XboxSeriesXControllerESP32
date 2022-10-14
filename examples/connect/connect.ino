@@ -23,6 +23,7 @@ void loop() {
     Serial.println((float)xboxController.xboxNotif.joyLHori / joystickMax);
     Serial.print("joyLVert rate: ");
     Serial.println((float)xboxController.xboxNotif.joyLVert / joystickMax);
+    Serial.println("battery " + String(xboxController.battery) + "%");
     Serial.println("received at " + String(receivedAt));
   } else {
     Serial.print("not connected");

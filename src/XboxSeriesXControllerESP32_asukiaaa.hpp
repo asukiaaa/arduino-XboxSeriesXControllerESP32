@@ -147,6 +147,7 @@ class Core {
 
   AdvertisedDeviceCallbacks* advDeviceCBs;
   ClientCallbacks* clientCBs;
+  uint8_t battery = 0;
 
   void begin() {
     NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DEVICE);
@@ -304,7 +305,7 @@ class Core {
   bool afterConnect(NimBLEClient* pClient) {
     for (auto pService : *pClient->getServices(true)) {
       auto sUuid = pService->getUUID();
-      if (!sUuid.equals(uuidServiceHid)) {
+      if (!sUuid.equals(uuidServiceHid) && !sUuid.equals(uuidServiceBattery)) {
         continue;  // skip
       }
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
@@ -377,38 +378,51 @@ class Core {
 
   void notifyCB(NimBLERemoteCharacteristic* pRemoteCharacteristic,
                 uint8_t* pData, size_t length, bool isNotify) {
+    auto sUuid = pRemoteCharacteristic->getRemoteService()->getUUID();
+    if (sUuid.equals(uuidServiceHid)) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-    static bool isPrinting = false;
-    static unsigned long printedAt = 0;
-    if (isPrinting || millis() - printedAt < printInterval) return;
-    isPrinting = true;
-    std::string str = (isNotify == true) ? "Notification" : "Indication";
-    str += " from ";
-    /** NimBLEAddress and NimBLEUUID have std::string operators */
-    str += std::string(pRemoteCharacteristic->getRemoteService()
-                           ->getClient()
-                           ->getPeerAddress());
-    str += ": Service = " +
-           std::string(pRemoteCharacteristic->getRemoteService()->getUUID());
-    str +=
-        ", Characteristic = " + std::string(pRemoteCharacteristic->getUUID());
-    // str += ", Value = " + std::string((char*)pData, length);
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(str.c_str());
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("value: ");
-    for (int i = 0; i < length; ++i) {
-      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(" %02x", pData[i]);
+      static bool isPrinting = false;
+      static unsigned long printedAt = 0;
+      if (isPrinting || millis() - printedAt < printInterval) return;
+      isPrinting = true;
+      std::string str = (isNotify == true) ? "Notification" : "Indication";
+      str += " from ";
+      /** NimBLEAddress and NimBLEUUID have std::string operators */
+      str += std::string(pRemoteCharacteristic->getRemoteService()
+                             ->getClient()
+                             ->getPeerAddress());
+      str += ": Service = " +
+             std::string(pRemoteCharacteristic->getRemoteService()->getUUID());
+      str +=
+          ", Characteristic = " + std::string(pRemoteCharacteristic->getUUID());
+      // str += ", Value = " + std::string((char*)pData, length);
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(str.c_str());
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("value: ");
+      for (int i = 0; i < length; ++i) {
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(" %02x", pData[i]);
+      }
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
+#endif
+      connectionState = ConnectionState::Connected;
+      xboxNotif.update(pData, length);
+      memcpy(notifByteArr, pData,
+             length < notifByteLen ? length : notifByteLen);
+      receivedNotificationAt = millis();
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      // XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print(xboxNotif.toString());
+      printedAt = millis();
+      isPrinting = false;
+#endif
+    } else if (sUuid.equals(uuidServiceBattery)) {
+      battery = pData[0];
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("battery notification");
+      for (int i = 0; i < length; ++i) {
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(" %02x", pData[i]);
+      }
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
+#endif
     }
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
-#endif
-    connectionState = ConnectionState::Connected;
-    xboxNotif.update(pData, length);
-    memcpy(notifByteArr, pData, length < notifByteLen ? length : notifByteLen);
-    receivedNotificationAt = millis();
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-    // XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print(xboxNotif.toString());
-    printedAt = millis();
-    isPrinting = false;
-#endif
   }
 
   static void scanCompleteCB(NimBLEScanResults results) {
