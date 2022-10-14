@@ -221,6 +221,8 @@ class Core {
   unsigned long receivedNotificationAt = 0;
   uint32_t scanTime = 4; /** 0 = scan forever */
   uint8_t countFailedConnection = 0;
+  uint8_t retryCountInOneConnection = 3;
+  unsigned long retryIntervalMs = 100;
 
   bool isScanning() { return NimBLEDevice::getScan()->isScanning(); }
 
@@ -273,7 +275,7 @@ class Core {
       pClient->connect(advDevice, true);
     }
 
-    int retryCount = 3;
+    int retryCount = retryCountInOneConnection;
     while (!pClient->isConnected()) {
       if (retryCount <= 0) {
         return false;
@@ -286,7 +288,7 @@ class Core {
 
       // NimBLEDevice::getScan()->stop();
       // pClient->disconnect();
-      delay(100);
+      delay(retryIntervalMs);
       // Serial.println(pClient->toString().c_str());
       pClient->connect(true);
       --retryCount;
