@@ -27,7 +27,7 @@ String controllerManufacturerDataSearching = "0600030080";
 
 enum class ConnectionState : uint8_t {
   Connected = 0,
-  WaitingFirstNotification = 1,
+  WaitingForFirstNotification = 1,
   Found = 2,
   Scanning = 3,
 };
@@ -43,7 +43,7 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Connected");
 #endif
-    *pConnectionState = ConnectionState::WaitingFirstNotification;
+    *pConnectionState = ConnectionState::WaitingForFirstNotification;
     // pClient->updateConnParams(120,120,0,60);
   };
 
@@ -209,8 +209,11 @@ class Core {
   const size_t notifByteLen = XboxControllerNotificationParser::expectedDataLen;
   uint8_t notifByteArr[XboxControllerNotificationParser::expectedDataLen];
 
+  bool isWaitingForFirstNotification() {
+    return connectionState == ConnectionState::WaitingForFirstNotification;
+  }
   bool isConnected() {
-    return connectionState == ConnectionState::WaitingFirstNotification ||
+    return connectionState == ConnectionState::WaitingForFirstNotification ||
            connectionState == ConnectionState::Connected;
   }
   unsigned long getReceiveNotificationAt() { return receivedNotificationAt; }
@@ -376,16 +379,20 @@ class Core {
       charaPrintId(pChara);
       XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(" canNotify ");
 #endif
-      // Serial.println("can notify");
       if (pChara->subscribe(
               true,
               std::bind(&Core::notifyCB, this, std::placeholders::_1,
                         std::placeholders::_2, std::placeholders::_3,
                         std::placeholders::_4),
               true)) {
-        // Serial.println("set notifyCb");
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
+            "succeeded in subscribing");
+#endif
       } else {
-        // Serial.println("failed to subscribe");
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("failed subscribing");
+#endif
       }
     }
   }
@@ -393,6 +400,13 @@ class Core {
   void notifyCB(NimBLERemoteCharacteristic* pRemoteCharacteristic,
                 uint8_t* pData, size_t length, bool isNotify) {
     auto sUuid = pRemoteCharacteristic->getRemoteService()->getUUID();
+    if (connectionState != ConnectionState::Connected) {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
+          "Received first notification");
+#endif
+      connectionState = ConnectionState::Connected;
+    }
     if (sUuid.equals(uuidServiceHid)) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
       static bool isPrinting = false;
@@ -417,7 +431,6 @@ class Core {
       }
       XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
 #endif
-      connectionState = ConnectionState::Connected;
       xboxNotif.update(pData, length);
       memcpy(notifByteArr, pData,
              length < notifByteLen ? length : notifByteLen);
