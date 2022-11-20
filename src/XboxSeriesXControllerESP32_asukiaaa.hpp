@@ -2,6 +2,7 @@
 
 #include <NimBLEDevice.h>
 #include <XboxControllerNotificationParser.h>
+#include <XboxSeriesXHIDReportBuilder_asukiaaa.hpp>
 
 // #define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
@@ -20,6 +21,7 @@ static NimBLEUUID uuidCharaPeripheralAppearance("2a01");
 static NimBLEUUID uuidCharaPeripheralControlParameters("2a04");
 
 static NimBLEAdvertisedDevice* advDevice;
+static NimBLEClient* pConnectedClient = nullptr;
 
 uint16_t controllerAppearance = 964;
 String controllerManufacturerDataNormal = "060000";
@@ -54,6 +56,7 @@ class ClientCallbacks : public NimBLEClientCallbacks {
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(" Disconnected");
 #endif
     *pConnectionState = ConnectionState::Scanning;
+    pConnectedClient = nullptr;
   };
 
   /********************* Security handled here **********************
@@ -160,6 +163,33 @@ class Core {
     NimBLEDevice::setPower(ESP_PWR_LVL_P9); /* +9db */
   }
 
+  void writeHIDReport(uint8_t* dataArr, size_t dataLen) {
+    if (pConnectedClient == nullptr) {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("no connnected client");
+#endif
+      return;
+    }
+    NimBLEClient* pClient = pConnectedClient;
+    auto pService = pClient->getService(uuidServiceHid);
+    for (auto pChara : *pService->getCharacteristics()) {
+      if (pChara->canWrite()) {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
+            "canWrite " + String(pChara->canWrite()));
+        writeWithComment(pChara, dataArr, dataLen);
+#else
+        pChara->writeValue(dataArr, dataLen, false);
+#endif
+      }
+    }
+  }
+
+  void writeHIDReport(
+      const XboxSeriesXHIDReportBuilder_asukiaaa::ReportBase& repo) {
+    writeHIDReport((uint8_t*)repo.arr8t, repo.arr8tLen);
+  }
+
   void onLoop() {
     if (!isConnected()) {
       if (advDevice != nullptr) {
@@ -226,6 +256,33 @@ class Core {
   uint8_t countFailedConnection = 0;
   uint8_t retryCountInOneConnection = 3;
   unsigned long retryIntervalMs = 100;
+  NimBLEClient* pClient = nullptr;
+
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+  static void writeWithComment(NimBLERemoteCharacteristic* pChara,
+                               uint8_t* data, size_t len) {
+    Serial.println("send(print from addr 0) ");
+    for (int i = 0; i < len; ++i) {
+      Serial.print(data[i]);
+      Serial.print(" ");
+    }
+    if (pChara->writeValue(data, len, true)) {
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("suceeded in writing");
+    } else {
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("failed writing");
+    }
+  }
+#endif
+
+  static void readAndPrint(NimBLERemoteCharacteristic* pChara) {
+    auto str = pChara->readValue();
+    if (str.size() == 0) {
+      str = pChara->readValue();
+    }
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+    printValue(str);
+#endif
+  }
 
   bool isScanning() { return NimBLEDevice::getScan()->isScanning(); }
 
@@ -314,6 +371,7 @@ class Core {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Done with this device!");
 #endif
+    pConnectedClient = pClient;
     return true;
   }
 
@@ -346,7 +404,7 @@ class Core {
         pChara->getUUID().toString().c_str(), pChara->getHandle());
   }
 
-  void printValue(std::__cxx11::string str) {
+  static void printValue(std::__cxx11::string str) {
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf("str: %s\n", str.c_str());
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf("hex:");
     for (auto v : str) {
@@ -357,6 +415,12 @@ class Core {
 #endif
 
   void charaHandle(NimBLERemoteCharacteristic* pChara) {
+    if (pChara->canWrite()) {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+      charaPrintId(pChara);
+      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(" canWrite");
+#endif
+    }
     if (pChara->canRead()) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
       charaPrintId(pChara);
@@ -440,10 +504,21 @@ class Core {
       printedAt = millis();
       isPrinting = false;
 #endif
-    } else if (sUuid.equals(uuidServiceBattery)) {
-      battery = pData[0];
+    } else {
+      if (sUuid.equals(uuidServiceBattery)) {
+        battery = pData[0];
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-      XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("battery notification");
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("battery notification");
+#endif
+      } else {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf("s:%s",
+                                                     sUuid.toString().c_str());
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
+            "not handled notification");
+#endif
+      }
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
       for (int i = 0; i < length; ++i) {
         XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.printf(" %02x", pData[i]);
       }
