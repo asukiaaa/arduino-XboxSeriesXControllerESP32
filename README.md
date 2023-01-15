@@ -33,3 +33,4 @@ MIT
 
 - [NimBLE_Client](https://github.com/h2zero/NimBLE-Arduino/blob/master/examples/NimBLE_Client/NimBLE_Client.ino)
 - [asukiaaa/arduino-XboxControllerNotificationParser](https://github.com/asukiaaa/arduino-XboxControllerNotificationParser)
+- [asukiaaa/arduino-XboxSeriesXHIDReportBuilder](https://github.com/asukiaaa/arduino-XboxSeriesXHIDReportBuilder)
