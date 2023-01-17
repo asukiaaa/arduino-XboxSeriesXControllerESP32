@@ -102,7 +102,6 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
   NimBLEAddress* targetDeviceAddress = nullptr;
   ConnectionState* pConnectionState;
   void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
-    Serial.println(advertisedDevice->toString().c_str());
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("Advertised Device found: ");
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
