@@ -2,6 +2,7 @@
 
 #include <NimBLEDevice.h>
 #include <XboxControllerNotificationParser.h>
+
 #include <XboxSeriesXHIDReportBuilder_asukiaaa.hpp>
 
 // #define XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL Serial
@@ -171,11 +172,16 @@ class Core {
     }
     NimBLEClient* pClient = pConnectedClient;
     auto pService = pClient->getService(uuidServiceHid);
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(pService->toString().c_str());
+#endif
     for (auto pChara : *pService->getCharacteristics()) {
       if (pChara->canWrite()) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
         XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
             "canWrite " + String(pChara->canWrite()));
+        XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
+            pChara->toString().c_str());
         writeWithComment(pChara, dataArr, dataLen);
 #else
         pChara->writeValue(dataArr, dataLen, false);
@@ -186,6 +192,14 @@ class Core {
 
   void writeHIDReport(
       const XboxSeriesXHIDReportBuilder_asukiaaa::ReportBase& repo) {
+    writeHIDReport((uint8_t*)repo.arr8t, repo.arr8tLen);
+  }
+
+  void writeHIDReport(
+      const XboxSeriesXHIDReportBuilder_asukiaaa::ReportBeforeUnion&
+          repoBeforeUnion) {
+    XboxSeriesXHIDReportBuilder_asukiaaa::ReportBase repo;
+    repo.v = repoBeforeUnion;
     writeHIDReport((uint8_t*)repo.arr8t, repo.arr8tLen);
   }
 
@@ -235,8 +249,6 @@ class Core {
   }
 
   XboxControllerNotificationParser xboxNotif;
-  const size_t notifByteLen = XboxControllerNotificationParser::expectedDataLen;
-  uint8_t notifByteArr[XboxControllerNotificationParser::expectedDataLen];
 
   bool isWaitingForFirstNotification() {
     return connectionState == ConnectionState::WaitingForFirstNotification;
@@ -495,8 +507,6 @@ class Core {
       XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
 #endif
       xboxNotif.update(pData, length);
-      memcpy(notifByteArr, pData,
-             length < notifByteLen ? length : notifByteLen);
       receivedNotificationAt = millis();
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
       // XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print(xboxNotif.toString());
