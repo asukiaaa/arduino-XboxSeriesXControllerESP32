@@ -24,9 +24,9 @@ static NimBLEUUID uuidCharaPeripheralControlParameters("2a04");
 static NimBLEAdvertisedDevice* advDevice;
 static NimBLEClient* pConnectedClient = nullptr;
 
-uint16_t controllerAppearance = 964;
-String controllerManufacturerDataNormal = "060000";
-String controllerManufacturerDataSearching = "0600030080";
+static const uint16_t controllerAppearance = 964;
+static const String controllerManufacturerDataNormal = "060000";
+static const String controllerManufacturerDataSearching = "0600030080";
 
 enum class ConnectionState : uint8_t {
   Connected = 0,
