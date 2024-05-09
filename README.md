@@ -41,6 +41,10 @@ lib_deps = XboxSeriesXControllerESP32_asukiaaa
 
 See [examples](./examples).
 
+## Introduction of receiver library that can use via I2C
+
+If you want to make receiver of Xbox controller, write [firmware about xbox controller](https://github.com/asukiaaa/arduino-ControllerAsI2c/blob/main/examples/slave_target/esp32/wireless-xbox-series-x/wireless-xbox-series-x.ino) to ESP32 then use it by [ControllerAsI2c_asukiaaa](https://github.com/asukiaaa/arduino-ControllerAsI2c) library from other IC via I2C connection.
+
 ## License
 
 MIT
