@@ -21,7 +21,7 @@ static NimBLEUUID uuidCharaHidInformation("2a4a");
 static NimBLEUUID uuidCharaPeripheralAppearance("2a01");
 static NimBLEUUID uuidCharaPeripheralControlParameters("2a04");
 
-static NimBLEAdvertisedDevice* advDevice;
+static const NimBLEAdvertisedDevice* advDevice;
 static NimBLEClient* pConnectedClient = nullptr;
 
 static const uint16_t controllerAppearance = 964;
@@ -42,15 +42,15 @@ class ClientCallbacks : public NimBLEClientCallbacks {
     this->pConnectionState = pConnectionState;
   }
 
-  void onConnect(NimBLEClient* pClient) {
+  void onConnect(NimBLEClient* pClient) override {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Connected");
 #endif
     *pConnectionState = ConnectionState::WaitingForFirstNotification;
     // pClient->updateConnParams(120,120,0,60);
-  };
+  }
 
-  void onDisconnect(NimBLEClient* pClient) {
+  void onDisconnect(NimBLEClient* pClient, int reason) override {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print(
         pClient->getPeerAddress().toString().c_str());
@@ -58,43 +58,36 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 #endif
     *pConnectionState = ConnectionState::Scanning;
     pConnectedClient = nullptr;
-  };
+  }
 
-  /********************* Security handled here **********************
-  ****** Note: these are the same return values as defaults ********/
-  uint32_t onPassKeyRequest() {
-    // Serial.println("Client Passkey Request");
-    /** return the passkey to send to the server */
-    return 0;
-  };
+  void onPassKeyEntry(NimBLEConnInfo& connInfo) override {
+    NimBLEDevice::injectPassKey(connInfo, 0);
+  }
 
-  bool onConfirmPIN(uint32_t pass_key) {
+  void onConfirmPasskey(NimBLEConnInfo& connInfo, uint32_t pass_key) override {
     // Serial.print("The passkey YES/NO number: ");
     // Serial.println(pass_key);
-    /** Return false if passkeys don't match. */
-    return true;
-  };
+    NimBLEDevice::injectConfirmPasskey(connInfo, true);
+  }
 
-  /** Pairing process complete, we can check the results in ble_gap_conn_desc */
-  void onAuthenticationComplete(ble_gap_conn_desc* desc) {
-    // Serial.println("onAuthenticationComplete");
-    if (!desc->sec_state.encrypted) {
-      // Serial.println("Encrypt connection failed - disconnecting");
-      /** Find the client with the connection handle provided in desc */
-      NimBLEDevice::getClientByID(desc->conn_handle)->disconnect();
+  void onAuthenticationComplete(NimBLEConnInfo& connInfo) override {
+    if (!connInfo.isEncrypted()) {
+      // Serial.printf("Encrypt connection failed - disconnecting\n");
+      /** Find the client with the connection handle provided in connInfo */
+      NimBLEDevice::getClientByHandle(connInfo.getConnHandle())->disconnect();
       return;
     }
-  };
+  }
 };
 
 /** Define a class to handle the callbacks when advertisments are received */
-class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
+class ScanCallbacks : public NimBLEScanCallbacks {
  public:
-  AdvertisedDeviceCallbacks(String strTargetDeviceAddress,
-                            ConnectionState* pConnectionState) {
+  ScanCallbacks(String strTargetDeviceAddress,
+                ConnectionState* pConnectionState) {
     if (strTargetDeviceAddress != "") {
       this->targetDeviceAddress =
-          new NimBLEAddress(strTargetDeviceAddress.c_str());
+          new NimBLEAddress(strTargetDeviceAddress.c_str(), 0);
     }
     this->pConnectionState = pConnectionState;
   }
@@ -102,7 +95,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
  private:
   NimBLEAddress* targetDeviceAddress = nullptr;
   ConnectionState* pConnectionState;
-  void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
+  void onResult(const NimBLEAdvertisedDevice* advertisedDevice) override {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.print("Advertised Device found: ");
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
@@ -116,15 +109,16 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
             ? advertisedDevice->getServiceUUID().toString().c_str()
             : "none");
 #endif
-    char* pHex = NimBLEUtils::buildHexData(
-        nullptr, (uint8_t*)advertisedDevice->getManufacturerData().data(),
+    auto pHex = NimBLEUtils::dataToHexString(
+        (uint8_t*)advertisedDevice->getManufacturerData().data(),
         advertisedDevice->getManufacturerData().length());
     if ((targetDeviceAddress != nullptr &&
          advertisedDevice->getAddress().equals(*targetDeviceAddress)) ||
         (targetDeviceAddress == nullptr &&
          advertisedDevice->getAppearance() == controllerAppearance &&
-         (strcmp(pHex, controllerManufacturerDataNormal.c_str()) == 0 ||
-          strcmp(pHex, controllerManufacturerDataSearching.c_str()) == 0) &&
+         (strcmp(pHex.c_str(), controllerManufacturerDataNormal.c_str()) == 0 ||
+          strcmp(pHex.c_str(), controllerManufacturerDataSearching.c_str()) ==
+              0) &&
          advertisedDevice->getServiceUUID().equals(uuidServiceHid)))
     // if (advertisedDevice->isAdvertisingService(uuidServiceHid))
     {
@@ -137,26 +131,24 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
       *pConnectionState = ConnectionState::Found;
       advDevice = advertisedDevice;
     }
-  };
+  }
 };
 
 class Core {
  public:
   Core(String targetDeviceAddress = "") {
-    this->advDeviceCBs =
-        new AdvertisedDeviceCallbacks(targetDeviceAddress, &connectionState);
+    this->scanCBs = new ScanCallbacks(targetDeviceAddress, &connectionState);
     this->clientCBs = new ClientCallbacks(&connectionState);
   }
 
-  AdvertisedDeviceCallbacks* advDeviceCBs;
+  ScanCallbacks* scanCBs;
   ClientCallbacks* clientCBs;
   uint8_t battery = 0;
   static const int deviceAddressLen = 6;
   uint8_t deviceAddressArr[deviceAddressLen];
 
   void begin() {
-    NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DEVICE);
-    // NimBLEDevice::setScanDuplicateCacheSize(200);
+    // NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DEVICE);
     NimBLEDevice::init("");
     NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_PUBLIC);
     NimBLEDevice::setSecurityAuth(true, false, false);
@@ -175,7 +167,7 @@ class Core {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(pService->toString().c_str());
 #endif
-    for (auto pChara : *pService->getCharacteristics()) {
+    for (auto pChara : pService->getCharacteristics()) {
       if (pChara->canWrite()) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
         XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
@@ -237,7 +229,7 @@ class Core {
     // pScan->clearResults();
     // pScan->clearDuplicateCache();
     pScan->setDuplicateFilter(false);
-    pScan->setAdvertisedDeviceCallbacks(advDeviceCBs);
+    pScan->setScanCallbacks(scanCBs);
     // pScan->setActiveScan(true);
     pScan->setInterval(97);
     pScan->setWindow(97);
@@ -306,11 +298,11 @@ class Core {
 
   /** Handles the provisioning of clients and connects / interfaces with the
    * server */
-  bool connectToServer(NimBLEAdvertisedDevice* advDevice) {
+  bool connectToServer(const NimBLEAdvertisedDevice* advDevice) {
     NimBLEClient* pClient = nullptr;
 
     /** Check if we have a client we should reuse first **/
-    if (NimBLEDevice::getClientListSize()) {
+    if (NimBLEDevice::getCreatedClientCount()) {
       pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
       if (pClient) {
         pClient->connect();
@@ -319,7 +311,7 @@ class Core {
 
     /** No client to reuse? Create a new one. */
     if (!pClient) {
-      if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS) {
+      if (NimBLEDevice::getCreatedClientCount() >= NIMBLE_MAX_CONNECTIONS) {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
         XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
             "Max clients reached - no more connections available");
@@ -387,9 +379,9 @@ class Core {
   }
 
   bool afterConnect(NimBLEClient* pClient) {
-    memcpy(deviceAddressArr, pClient->getPeerAddress().getNative(),
+    memcpy(deviceAddressArr, pClient->getPeerAddress().getBase(),
            deviceAddressLen);
-    for (auto pService : *pClient->getServices(true)) {
+    for (auto pService : pClient->getServices(true)) {
       auto sUuid = pService->getUUID();
       if (!sUuid.equals(uuidServiceHid) && !sUuid.equals(uuidServiceBattery)) {
         continue;  // skip
@@ -398,7 +390,7 @@ class Core {
       XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println(
           pService->toString().c_str());
 #endif
-      for (auto pChara : *pService->getCharacteristics(true)) {
+      for (auto pChara : pService->getCharacteristics(true)) {
         charaHandle(pChara);
         charaSubscribeNotification(pChara);
       }
