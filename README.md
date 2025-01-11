@@ -9,6 +9,11 @@ You can check and udpate firmware with using [Xbox accessories](https://www.micr
 
 ## Setup
 
+### Version infromation
+
+For NimBLE 2.1.0 or more, use version 1.1.0 or more of this library.<br />
+For NimBle less than 2.1.0 (1.4.3 or less), use version 1.0.9 of this library.
+
 ### Arduino IDE
 
 Install XboxSeriesXControllerESP32_asukiaaa from library manager.
