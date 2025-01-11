@@ -132,6 +132,12 @@ class ScanCallbacks : public NimBLEScanCallbacks {
       advDevice = advertisedDevice;
     }
   }
+
+  void onScanEnd(const NimBLEScanResults& scanResults, int reason) override {
+#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
+    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Scan Ended");
+#endif
+  }
 };
 
 class Core {
@@ -236,8 +242,7 @@ class Core {
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
     XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Start scan");
 #endif
-    // assign scanCompleteCB to scan on other thread
-    pScan->start(scanTime, &Core::scanCompleteCB, false);
+    pScan->start(msScanTime);
   }
 
   XboxControllerNotificationParser xboxNotif;
@@ -255,7 +260,7 @@ class Core {
  private:
   ConnectionState connectionState = ConnectionState::Scanning;
   unsigned long receivedNotificationAt = 0;
-  uint32_t scanTime = 4; /** 0 = scan forever */
+  uint32_t msScanTime = 4000; /** 0 = scan forever */
   uint8_t countFailedConnection = 0;
   uint8_t retryCountInOneConnection = 3;
   unsigned long retryIntervalMs = 100;
@@ -526,12 +531,6 @@ class Core {
       XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("");
 #endif
     }
-  }
-
-  static void scanCompleteCB(NimBLEScanResults results) {
-#ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
-    XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("Scan Ended");
-#endif
   }
 };
 
