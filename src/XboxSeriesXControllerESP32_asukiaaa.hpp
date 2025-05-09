@@ -203,6 +203,8 @@ class Core {
 
   void onLoop() {
     if (!isConnected()) {
+      receivedNotificationAt = 0;
+      receivedBatteryAt = 0;
       if (advDevice != nullptr) {
         auto connectionResult = connectToServer(advDevice);
         if (!connectionResult || !isConnected()) {
