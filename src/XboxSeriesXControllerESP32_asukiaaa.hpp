@@ -203,6 +203,8 @@ class Core {
 
   void onLoop() {
     if (!isConnected()) {
+      receivedNotificationAt = 0;
+      receivedBatteryAt = 0;
       if (advDevice != nullptr) {
         auto connectionResult = connectToServer(advDevice);
         if (!connectionResult || !isConnected()) {
@@ -256,10 +258,12 @@ class Core {
   }
   unsigned long getReceiveNotificationAt() { return receivedNotificationAt; }
   uint8_t getCountFailedConnection() { return countFailedConnection; }
+  unsigned long getReceiveBatteryAt() { return receivedBatteryAt; }
 
  private:
   ConnectionState connectionState = ConnectionState::Scanning;
   unsigned long receivedNotificationAt = 0;
+  unsigned long receivedBatteryAt = 0;
   uint32_t msScanTime = 4000; /** 0 = scan forever */
   uint8_t countFailedConnection = 0;
   uint8_t retryCountInOneConnection = 3;
@@ -513,6 +517,7 @@ class Core {
     } else {
       if (sUuid.equals(uuidServiceBattery)) {
         battery = pData[0];
+        receivedBatteryAt = millis();
 #ifdef XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL
         XBOX_SERIES_X_CONTROLLER_DEBUG_SERIAL.println("battery notification");
 #endif
