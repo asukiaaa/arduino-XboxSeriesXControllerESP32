@@ -388,7 +388,7 @@ class Core {
   }
 
   bool afterConnect(NimBLEClient* pClient) {
-    memcpy(deviceAddressArr, pClient->getPeerAddress().getBase(),
+    memcpy(deviceAddressArr, pClient->getPeerAddress().getBase()->val,
            deviceAddressLen);
     for (auto pService : pClient->getServices(true)) {
       auto sUuid = pService->getUUID();
