@@ -92,6 +92,22 @@ class ScanCallbacks : public NimBLEScanCallbacks {
     this->pConnectionState = pConnectionState;
   }
 
+  bool ignoreTargetAddressToConnectToUnkownSearchingDevice = false;
+
+  void setTargetAddress(ble_addr_t address) {
+    if (targetDeviceAddress != nullptr) {
+      *targetDeviceAddress = address;
+    } else {
+      targetDeviceAddress = new NimBLEAddress(address);
+    }
+  }
+
+  void clearTargetAddress() {
+    if (targetDeviceAddress != nullptr) {
+      delete targetDeviceAddress;
+    }
+  }
+
  private:
   NimBLEAddress* targetDeviceAddress = nullptr;
   ConnectionState* pConnectionState;
@@ -114,6 +130,10 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         advertisedDevice->getManufacturerData().length());
     if ((targetDeviceAddress != nullptr &&
          advertisedDevice->getAddress().equals(*targetDeviceAddress)) ||
+        (targetDeviceAddress != nullptr &&
+         ignoreTargetAddressToConnectToUnkownSearchingDevice &&
+         strcmp(pHex.c_str(), controllerManufacturerDataSearching.c_str()) ==
+             0) ||
         (targetDeviceAddress == nullptr &&
          advertisedDevice->getAppearance() == controllerAppearance &&
          (strcmp(pHex.c_str(), controllerManufacturerDataNormal.c_str()) == 0 ||
@@ -152,6 +172,16 @@ class Core {
   uint8_t battery = 0;
   static const int deviceAddressLen = 6;
   uint8_t deviceAddressArr[deviceAddressLen];
+
+  void setIgnoreTargetAddressToConnectToUnkownSearchingDevice(bool allow) {
+    scanCBs->ignoreTargetAddressToConnectToUnkownSearchingDevice = allow;
+  }
+
+  void setTargetAddress(ble_addr_t address) {
+    scanCBs->setTargetAddress(address);
+  }
+
+  void clearTargetAddress() { scanCBs->clearTargetAddress(); }
 
   void begin() {
     // NimBLEDevice::setScanFilterMode(CONFIG_BTDM_SCAN_DUPL_TYPE_DEVICE);
